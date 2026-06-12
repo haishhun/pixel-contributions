@@ -80,7 +80,7 @@ export function renderSvg(data, opts = {}) {
                         dayOfWeek: dow,
                         count: d.count,
                         level: d.level,
-                        dates: d.dates.join(" & "),
+                        dates: d.dates.join(" &amp; "),
                     })),
                 });
             }

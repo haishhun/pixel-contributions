@@ -125,7 +125,7 @@ export function renderSvg(data: ContributionData, opts: RenderOptions = {}): str
             dayOfWeek: dow,
             count: d.count,
             level: d.level,
-            dates: d.dates.join(" & "),
+            dates: d.dates.join(" &amp; "),
           })),
         });
       }
