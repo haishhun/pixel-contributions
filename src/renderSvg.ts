@@ -160,21 +160,15 @@ export function renderSvg(data: ContributionData, opts: RenderOptions = {}): str
   // Build month labels
   let monthLabels = "";
   if (showMonths) {
-    // Track first and last column index per month, then center the label
-    const monthCols = new Map<number, { first: number; last: number }>();
+    let lastMonth = -1;
     displayWeeks.forEach((week, wi) => {
       if (!week.firstDate) return;
-      const month = new Date(week.firstDate).getMonth();
-      const existing = monthCols.get(month);
-      if (!existing) {
-        monthCols.set(month, { first: wi, last: wi });
-      } else {
-        existing.last = wi;
+      const month = new Date(week.firstDate + "T12:00:00").getMonth();
+      if (month !== lastMonth) {
+        lastMonth = month;
+        const x = paddingLeft + wi * step;
+        monthLabels += `<text x="${x}" y="${totalPaddingTop - 6}" fill="${colors.subtext}" font-size="9" font-family="monospace">${MONTHS[month]}</text>`;
       }
-    });
-    monthCols.forEach(({ first, last }, month) => {
-      const x = paddingLeft + Math.round((first + last) / 2) * step;
-      monthLabels += `<text x="${x}" y="${totalPaddingTop - 6}" fill="${colors.subtext}" font-size="9" font-family="monospace" text-anchor="middle">${MONTHS[month]}</text>`;
     });
   }
 
