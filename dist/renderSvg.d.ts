@@ -7,6 +7,7 @@ export type RenderOptions = {
     showTotal?: boolean;
     showMonths?: boolean;
     showDays?: boolean;
+    compress?: boolean;
     title?: string;
     quote?: string;
 };

@@ -23,6 +23,7 @@ async function main() {
     const showTotal = parseBool(getInput("show_total"));
     const showMonths = parseBool(getInput("show_months"));
     const showDays = parseBool(getInput("show_days"));
+    const compress = parseBool(getInput("compress"), false);
     const quote = getInput("quote") || undefined;
     console.log(`📊 Fetching contributions for: ${username}`);
     const data = await fetchContributions(username, token);
@@ -33,6 +34,7 @@ async function main() {
         showTotal,
         showMonths,
         showDays,
+        compress,
         quote,
     });
     // Support multiple outputs (newline-separated like snk)
@@ -42,8 +44,9 @@ async function main() {
         const [filePath, qs] = out.split("?");
         const params = new URLSearchParams(qs ?? "");
         const schemeOverride = (params.get("color_scheme") ?? colorScheme);
-        const finalSvg = schemeOverride !== colorScheme
-            ? renderSvg(data, { colorScheme: schemeOverride, showTotal, showMonths, showDays, quote })
+        const compressOverride = params.has("compress") ? params.get("compress") !== "false" : compress;
+        const finalSvg = (schemeOverride !== colorScheme || compressOverride !== compress)
+            ? renderSvg(data, { colorScheme: schemeOverride, showTotal, showMonths, showDays, compress: compressOverride, quote })
             : svg;
         mkdirSync(dirname(filePath), { recursive: true });
         writeFileSync(filePath, finalSvg, "utf-8");

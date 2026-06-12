@@ -47,6 +47,11 @@ inputs:
     required: false
     default: "true"
 
+  compress:
+    description: "Merge every 2 weeks into 1 column, halving the grid width"
+    required: false
+    default: "false"
+
   quote:
     description: "Custom motivational quote shown at the bottom (leave empty for random)"
     required: false

@@ -1,4 +1,4 @@
-import { ContributionData, getLevelIndex } from "./fetchContributions.js";
+import { ContributionData, ContributionDay, getLevelIndex } from "./fetchContributions.js";
 
 export type RenderOptions = {
   colorScheme?: "github-dark" | "dracula" | "nord" | "synthwave";
@@ -8,6 +8,7 @@ export type RenderOptions = {
   showTotal?: boolean;
   showMonths?: boolean;
   showDays?: boolean;
+  compress?: boolean;
   title?: string;
   quote?: string;
 };
@@ -81,12 +82,64 @@ export function renderSvg(data: ContributionData, opts: RenderOptions = {}): str
     showTotal = true,
     showMonths = true,
     showDays = true,
+    compress = false,
     title = "CONTRIBUTIONS",
     quote = QUOTES[Math.floor(Math.random() * QUOTES.length)],
   } = opts;
 
   const colors = COLOR_SCHEMES[colorScheme] ?? COLOR_SCHEMES["github-dark"];
   const step = cellSize + cellGap;
+
+  // Compress: merge every pair of consecutive weeks into one cell column
+  // Each compressed cell = sum of counts, max of levels
+  type CompressedDay = { dayOfWeek: number; count: number; level: 0 | 1 | 2 | 3 | 4; dates: string };
+  type CompressedWeek = { days: CompressedDay[]; firstDate: string };
+
+  const rawWeeks = data.weeks;
+
+  const displayWeeks: CompressedWeek[] = compress
+    ? (() => {
+      const result: CompressedWeek[] = [];
+      for (let i = 0; i < rawWeeks.length; i += 2) {
+        const weekA = rawWeeks[i];
+        const weekB = rawWeeks[i + 1];
+        // Collect all days from both weeks, group by day-of-week
+        const byDow = new Map<number, { count: number; level: 0 | 1 | 2 | 3 | 4; dates: string[] }>();
+        for (const week of [weekA, weekB].filter(Boolean)) {
+          for (const day of week.contributionDays) {
+            const dow = new Date(day.date).getDay();
+            const existing = byDow.get(dow);
+            const lvl = getLevelIndex(day.contributionLevel);
+            if (existing) {
+              existing.count += day.contributionCount;
+              existing.level = Math.max(existing.level, lvl) as 0 | 1 | 2 | 3 | 4;
+              existing.dates.push(day.date);
+            } else {
+              byDow.set(dow, { count: day.contributionCount, level: lvl, dates: [day.date] });
+            }
+          }
+        }
+        result.push({
+          firstDate: weekA?.contributionDays[0]?.date ?? "",
+          days: Array.from(byDow.entries()).map(([dow, d]) => ({
+            dayOfWeek: dow,
+            count: d.count,
+            level: d.level,
+            dates: d.dates.join(" & "),
+          })),
+        });
+      }
+      return result;
+    })()
+    : rawWeeks.map((w) => ({
+      firstDate: w.contributionDays[0]?.date ?? "",
+      days: w.contributionDays.map((d) => ({
+        dayOfWeek: new Date(d.date).getDay(),
+        count: d.contributionCount,
+        level: getLevelIndex(d.contributionLevel),
+        dates: d.date,
+      })),
+    }));
 
   const paddingLeft = showDays ? 32 : 10;
   const paddingTop = showMonths ? 40 : 20;
@@ -96,8 +149,7 @@ export function renderSvg(data: ContributionData, opts: RenderOptions = {}): str
   const titleHeight = 30;
   const totalPaddingTop = paddingTop + titleHeight;
 
-  const weeks = data.weeks;
-  const numWeeks = weeks.length;
+  const numWeeks = displayWeeks.length;
 
   const gridWidth = numWeeks * step - cellGap;
   const gridHeight = 7 * step - cellGap;
@@ -109,10 +161,9 @@ export function renderSvg(data: ContributionData, opts: RenderOptions = {}): str
   let monthLabels = "";
   if (showMonths) {
     let lastMonth = -1;
-    weeks.forEach((week, wi) => {
-      const firstDay = week.contributionDays[0];
-      if (!firstDay) return;
-      const month = new Date(firstDay.date).getMonth();
+    displayWeeks.forEach((week, wi) => {
+      if (!week.firstDate) return;
+      const month = new Date(week.firstDate).getMonth();
       if (month !== lastMonth) {
         lastMonth = month;
         const x = paddingLeft + wi * step;
@@ -132,15 +183,13 @@ export function renderSvg(data: ContributionData, opts: RenderOptions = {}): str
 
   // Build cells
   let cells = "";
-  weeks.forEach((week, wi) => {
-    week.contributionDays.forEach((day) => {
-      const dayOfWeek = new Date(day.date).getDay();
+  displayWeeks.forEach((week, wi) => {
+    week.days.forEach((day) => {
       const x = paddingLeft + wi * step;
-      const y = totalPaddingTop + dayOfWeek * step;
-      const level = getLevelIndex(day.contributionLevel);
-      const fill = colors.levels[level];
-      const title = `${day.date}: ${day.contributionCount} contribution${day.contributionCount !== 1 ? "s" : ""}`;
-      cells += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="${cellRadius}" ry="${cellRadius}" fill="${fill}"><title>${title}</title></rect>`;
+      const y = totalPaddingTop + day.dayOfWeek * step;
+      const fill = colors.levels[day.level];
+      const label = `${day.dates}: ${day.count} contribution${day.count !== 1 ? "s" : ""}`;
+      cells += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="${cellRadius}" ry="${cellRadius}" fill="${fill}"><title>${label}</title></rect>`;
     });
   });
 
