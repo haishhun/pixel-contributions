@@ -1,0 +1,37 @@
+name: Pixel Contributions
+
+on:
+  schedule:
+    # Regenerate every day at midnight UTC
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Generate pixel contribution SVGs
+        uses: haishhun/pixel-contributions@main
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          output_path: |
+            dist/pixel-contributions.svg
+            dist/pixel-contributions-dracula.svg?color_scheme=dracula
+            dist/pixel-contributions-nord.svg?color_scheme=nord
+            dist/pixel-contributions-synthwave.svg?color_scheme=synthwave
+          color_scheme: github-dark
+          show_total: true
+          show_months: true
+          show_days: true
+
+      - name: Push SVGs to output branch
+        uses: crazy-max/ghaction-github-pages@v3.1.0
+        with:
+          target_branch: output
+          build_dir: dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

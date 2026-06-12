@@ -1,0 +1,57 @@
+name: "Pixel Contributions"
+description: "Generate a pixel-art style GitHub contribution graph SVG for your profile README"
+author: "haishhun"
+
+branding:
+  icon: "grid"
+  color: "green"
+
+inputs:
+  github_user_name:
+    description: "GitHub username to generate the contribution graph for"
+    required: true
+
+  token:
+    description: "GitHub token with read:user scope (defaults to GITHUB_TOKEN)"
+    required: false
+    default: ${{ github.token }}
+
+  output_path:
+    description: |
+      Path(s) to write the SVG output. One per line.
+      Supports query string options:
+        ?color_scheme=dracula|nord|synthwave|github-dark
+      Example:
+        dist/contributions.svg
+        dist/contributions-dark.svg?color_scheme=dracula
+    required: false
+    default: "dist/pixel-contributions.svg"
+
+  color_scheme:
+    description: "Default color scheme: github-dark | dracula | nord | synthwave"
+    required: false
+    default: "github-dark"
+
+  show_total:
+    description: "Show total contribution count at the bottom"
+    required: false
+    default: "true"
+
+  show_months:
+    description: "Show month labels above the grid"
+    required: false
+    default: "true"
+
+  show_days:
+    description: "Show day labels beside the grid"
+    required: false
+    default: "true"
+
+  quote:
+    description: "Custom motivational quote shown at the bottom (leave empty for random)"
+    required: false
+    default: ""
+
+runs:
+  using: "node20"
+  main: "dist/index.js"
