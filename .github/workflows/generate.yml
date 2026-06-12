@@ -24,6 +24,7 @@ jobs:
             dist/pixel-contributions-nord.svg?color_scheme=nord
             dist/pixel-contributions-synthwave.svg?color_scheme=synthwave
           color_scheme: github-dark
+          compress: true
           show_total: true
           show_months: true
           show_days: true
